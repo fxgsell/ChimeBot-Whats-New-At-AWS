@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: A ChatBot for Amazon Chime that send a message in the group for each news from AWS.  
+
+Parameters: 
+  ChatBotURL: 
+    Type: String
+  
+Resources:
+  ScheduledFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.6
+      Timeout: 180
+      CodeUri: ./function/chimebot-whatsnew.zip
+      Policies:
+        - DynamoDBCrudPolicy:
+              TableName:
+                Ref: "MyTable"
+      Environment:
+        Variables:
+          TABLE_NAME: 
+            Ref: MyTable
+          BOT_URL:
+            Ref: ChatBotURL
+      Events:
+        Timer:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+  MyTable:
+    Type: AWS::Serverless::SimpleTable
+    TimeToLiveSpecification:
+      AttributeName: expire
+      Enabled: True

@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+
+  build:
+    commands:
+      - echo Entered the build phase...
+      - echo Build started on `date`
+      - make
+      - aws cloudformation package --template-file tweet-bot.yml
+                                   --s3-bucket demo-tweet-bot 
+                                   --output-template-file new-tweet-bot.yml
+
+artifacts:
+  files:
+    -  new-tweet-bot.yml
