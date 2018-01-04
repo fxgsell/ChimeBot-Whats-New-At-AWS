@@ -5,7 +5,7 @@ Description: A ChatBot for Amazon Chime that send a message in the group for eac
 Parameters: 
   ChatBotURL: 
     Type: String
-  
+    AllowedPattern : ".+"
 Resources:
   ScheduledFunction:
     Type: AWS::Serverless::Function

@@ -9,35 +9,39 @@ import requests
 HOOK_URL = os.environ['BOT_URL']
 TABLE_NAME = os.environ['TABLE_NAME']
 DB = boto3.resource('dynamodb')
+FEEDS = ['https://aws.amazon.com/new/feed/', 'https://aws.amazon.com/security/security-bulletins/feed/']
 
 def load_new_items():
-    feed = feedparser.parse('https://aws.amazon.com/new/feed/')
-    keys = []
-    items = {}
+    items = []
+    for feed in FEEDS:
+        print(feed)
+        news_feed = feedparser.parse(feed)
+        keys = []
+        items = {}
 
-    epoch_time = int(time.time()) + 2592000 
-    for entry in feed['entries']:
-        id = entry['title_detail']['value'].lower()
-        keys.append({'id': id})
-        items[id] = {
-            'id': id,
-            'expire': epoch_time,
-            'message': entry['title_detail']['value'] + ': ' +  entry['link']
-        }
+        epoch_time = int(time.time()) + 2592000 
+        for entry in news_feed['entries']:
+            id = entry['title_detail']['value'].lower()
+            keys.append({'id': id})
+            items[id] = {
+                'id': id,
+                'expire': epoch_time,
+                'message': entry['title_detail']['value'] + ': ' +  entry['link']
+            }
 
-    response = DB.batch_get_item(
-        RequestItems={TABLE_NAME: {'Keys': keys}},
-        ReturnConsumedCapacity='TOTAL'
-    )
-    print('DynamoDB read capacity used: ', response['ConsumedCapacity'])
+        response = DB.batch_get_item(
+            RequestItems={TABLE_NAME: {'Keys': keys}},
+            ReturnConsumedCapacity='TOTAL'
+        )
+        print('DynamoDB read capacity used: ', response['ConsumedCapacity'])
 
-    if 'Responses' in response:
-        for item in response['Responses'][TABLE_NAME]:
-            del items[item['id']]
+        if 'Responses' in response:
+            for item in response['Responses'][TABLE_NAME]:
+                del items[item['id']]
 
-    dynamodb_items = []
-    for key, value in items.items():
-        dynamodb_items.append({'PutRequest': {'Item': value}})
+        dynamodb_items = []
+        for key, value in items.items():
+            dynamodb_items.append({'PutRequest': {'Item': value}})
 
     if len(items) > 0:
         response = DB.batch_write_item(
