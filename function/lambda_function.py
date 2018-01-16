@@ -1,5 +1,3 @@
-from __future__ import (print_function)
-
 import os
 import time
 import feedparser
@@ -9,16 +7,44 @@ import requests
 HOOK_URL = os.environ['BOT_URL']
 TABLE_NAME = os.environ['TABLE_NAME']
 DB = boto3.resource('dynamodb')
-FEEDS = ['https://aws.amazon.com/new/feed/', 'https://aws.amazon.com/security/security-bulletins/feed/']
+FEEDS = [
+    'https://aws.amazon.com/new/feed/',
+    'https://aws.amazon.com/security/security-bulletins/feed/'
+]
 
+def check_items(keys, items):
+    if len(keys) > 0:
+        response = DB.batch_get_item(
+            RequestItems={TABLE_NAME: {'Keys': keys}},
+            ReturnConsumedCapacity='TOTAL'
+        )
+        keys = []
+        print('DynamoDB read capacity used: ', response['ConsumedCapacity'])
+    
+        if 'Responses' in response:
+            for item in response['Responses'][TABLE_NAME]:
+                del items[item['id']]
+                
+    return items
+
+def commit_items(dynamodb_items):
+    print("DynamoDB Items:", dynamodb_items)
+    if len(dynamodb_items) != 0:
+        response = DB.batch_write_item(
+            RequestItems={
+                TABLE_NAME: dynamodb_items
+            },
+            ReturnConsumedCapacity='TOTAL'
+        )
+        print('DynamoDB write capacity used: ', response['ConsumedCapacity'])
+        
 def load_new_items():
-    items = []
+    items = {}
     for feed in FEEDS:
         print(feed)
         news_feed = feedparser.parse(feed)
         keys = []
-        items = {}
-
+        
         epoch_time = int(time.time()) + 2592000 
         for entry in news_feed['entries']:
             id = entry['title_detail']['value'].lower()
@@ -28,29 +54,20 @@ def load_new_items():
                 'expire': epoch_time,
                 'message': entry['title_detail']['value'] + ': ' +  entry['link']
             }
+            if len(keys) == 20:
+                items = check_items(keys, items)
+                keys = []
 
-        response = DB.batch_get_item(
-            RequestItems={TABLE_NAME: {'Keys': keys}},
-            ReturnConsumedCapacity='TOTAL'
-        )
-        print('DynamoDB read capacity used: ', response['ConsumedCapacity'])
+        if len(keys) != 20:
+            items = check_items(keys, items)
 
-        if 'Responses' in response:
-            for item in response['Responses'][TABLE_NAME]:
-                del items[item['id']]
-
-        dynamodb_items = []
-        for key, value in items.items():
-            dynamodb_items.append({'PutRequest': {'Item': value}})
-
-    if len(items) > 0:
-        response = DB.batch_write_item(
-            RequestItems={
-                TABLE_NAME: dynamodb_items
-            },
-            ReturnConsumedCapacity='TOTAL'
-        )
-        print('DynamoDB write capacity used: ', response['ConsumedCapacity'])
+    dynamodb_items = []
+    for key, value in items.items():
+        dynamodb_items.append({'PutRequest': {'Item': value}})
+        if len(dynamodb_items) == 20:
+            commit_items(dynamodb_items)
+            dynamodb_items = []
+    commit_items(dynamodb_items)
     return items
 
 
@@ -60,7 +77,7 @@ def lambda_handler(event, context):
     if  len(new_messages) > 0 and len(new_messages) < 20:
         i = 0
         for k, message in new_messages.items():
-            content += "# " + message['message']
+            content += str(i + 1) + ". " + message['message']
             i += 1
             if len(new_messages) > i:
                 content += "\n\n"
