@@ -1,5 +1,15 @@
+*.dist-info/
+function/certifi/
+function/chardet/
+function/feedparser.py
+function/idna/
+function/request/
+function/requests/
+function/urllib3/
+
 chimebot-whatsnew-release.yml
 chimebot-whatsnew.zip
+properties.mk
 .vscode
 
 # Byte-compiled / optimized / DLL files
