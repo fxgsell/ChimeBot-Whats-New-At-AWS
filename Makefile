@@ -9,12 +9,12 @@ all: build deploy
 
 build:
 	make -C function
-
-deploy: all
 	aws cloudformation package \
 		--template-file $(TEMPLATE) \
 		--s3-bucket $(ARTIFACT_BUCKET) \
 		--output-template-file $(FINAL_TEMPLATE)
+
+deploy: all
 	aws cloudformation deploy \
 		--region $(AWS_REGION) \
 		--template-file $(FINAL_TEMPLATE) \
