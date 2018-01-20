@@ -4,9 +4,21 @@ A ChatBot for Amazon Chime that sends a message to a group for each news from AW
 
 Made with ❤️ by François-Xavier Gsell. Available on the [AWS Serverless Application Repository](https://aws.amazon.com/serverless)
 
-## PARAMETERS
+## MANUAL INSTALLATION
 
-1. ***ChatBotURL:*** the webhook URL for your Amazon Chime group.
+### Requirements
+
+- Python 3.x
+- pip3
+
+### Step by Step
+
+1. Copy `properties.dummy.mk` to `properties.mk`
+1. Set a value for `ARTIFACT_BUCKET`, `AWS_REGION` and `CHAT_URL` in  `properties.mk`
+    - `AWS_REGION`: The AWS region where the bot will be deployed
+    - `ARTIFACT_BUCKET`: The S3 bucket to store the package for Lambda, must be in the same `AWS_REGION`
+    - `CHAT_URL`: The webhook URL for your Amazon Chime group.
+1. Run `make`
 
 ## License
 

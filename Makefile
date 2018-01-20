@@ -1,8 +1,9 @@
-include properties.mk
 
 TEMPLATE=chimebot-whatsnew.yml
 FINAL_TEMPLATE=chimebot-whatsnew-release.yml
-CF_STACK=chimebot-whatsnew
+CF_STACK=ChimeBot-Whats-New-At-AWS
+
+include properties.mk
 
 all: build deploy
 

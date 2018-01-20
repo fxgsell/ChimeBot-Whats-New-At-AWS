@@ -20,11 +20,11 @@ def check_items(keys, items):
         )
         keys = []
         print('DynamoDB read capacity used: ', response['ConsumedCapacity'])
-    
+
         if 'Responses' in response:
             for item in response['Responses'][TABLE_NAME]:
                 del items[item['id']]
-                
+
     return items
 
 def commit_items(dynamodb_items):
@@ -37,15 +37,15 @@ def commit_items(dynamodb_items):
             ReturnConsumedCapacity='TOTAL'
         )
         print('DynamoDB write capacity used: ', response['ConsumedCapacity'])
-        
+
 def load_new_items():
     items = {}
     for feed in FEEDS:
         print(feed)
         news_feed = feedparser.parse(feed)
         keys = []
-        
-        epoch_time = int(time.time()) + 2592000 
+
+        epoch_time = int(time.time()) + 2592000
         for entry in news_feed['entries']:
             id = entry['title_detail']['value'].lower()
             keys.append({'id': id})
@@ -62,7 +62,7 @@ def load_new_items():
             items = check_items(keys, items)
 
     dynamodb_items = []
-    for key, value in items.items():
+    for __, value in items.items():
         dynamodb_items.append({'PutRequest': {'Item': value}})
         if len(dynamodb_items) == 20:
             commit_items(dynamodb_items)
@@ -74,15 +74,12 @@ def load_new_items():
 def lambda_handler(event, context):
     new_messages = load_new_items()
     content = ""
-    if  len(new_messages) > 0 and len(new_messages) < 20:
-        i = 0
-        for k, message in new_messages.items():
-            content += str(i + 1) + ". " + message['message']
-            i += 1
-            if len(new_messages) > i:
-                content += "\n\n"
-        response = requests.post(url=HOOK_URL, json={"Content": content})
-    elif len(new_messages) >= 20:
+    if len(new_messages) >= 20:
         response = requests.post(url=HOOK_URL, json={"Content": "Too many new messages... Check the site: https://aws.amazon.com/new. "})
+        print(response)
+        return
+    for __, message in new_messages.items():
+        content = message['message']
+        response = requests.post(url=HOOK_URL, json={"Content": content})
 
     print(content)
