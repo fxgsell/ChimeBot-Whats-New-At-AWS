@@ -3,6 +3,7 @@ import time
 import feedparser
 import boto3
 import requests
+from io import BytesIO
 
 HOOK_URL = os.environ['BOT_URL']
 TABLE_NAME = os.environ['TABLE_NAME']
@@ -42,7 +43,19 @@ def load_new_items():
     items = {}
     for feed in FEEDS:
         print(feed)
-        news_feed = feedparser.parse(feed)
+        try:
+            resp = requests.get(feed, timeout=10.0)
+        except requests.ReadTimeout:
+            print("Timeout when reading RSS %s", feed)
+            continue
+
+        # Put it to memory stream object universal feedparser
+        content = BytesIO(resp.content)
+
+        # Parse content
+        news_feed = feedparser.parse(content)
+
+        #news_feed = feedparser.parse(feed)
         keys = []
 
         epoch_time = int(time.time()) + 2592000
