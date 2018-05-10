@@ -87,15 +87,36 @@ def load_new_items():
     return items
 
 
+def post_message(content, tries=0):
+    if tries > 5:
+        print("DEBUG: Retried 6 times. Giving up")
+        return False
+    response = requests.post(url=HOOK_URL, json={"Content": content})
+    if response.status_code != 200:
+        print("DEBUG: Content: ", content)
+        print("DEBUG: Response: ", response)
+        print("DEBUG: Response: ", response.reason)
+        print("DEBUG: Going to 3 second sleep")
+        time.sleep(3)
+        print("DEBUG: Retrying")
+        return post_message(content, tries + 1)
+    else: time.sleep(1)
+    return True
+
 def lambda_handler(event, context):
     new_messages = load_new_items()
+    status = False
     content = ""
-    if len(new_messages) >= 20:
+    if len(new_messages) >= 60:
         response = requests.post(url=HOOK_URL, json={"Content": "Too many new messages... Check the site: https://aws.amazon.com/new. "})
         print(response)
         return
+
     for __, message in new_messages.items():
         content = message['message']
-        response = requests.post(url=HOOK_URL, json={"Content": content})
-
-    print(content)
+        if post_message(content) != True:
+            print("DEBUG: Failed to send: ", message['id'])
+            status = True
+    
+    if status:
+        raise Exception("At least one news wasn't sent!")
