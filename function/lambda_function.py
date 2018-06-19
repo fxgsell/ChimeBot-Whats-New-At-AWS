@@ -58,7 +58,7 @@ def load_new_items():
         #news_feed = feedparser.parse(feed)
         keys = []
         id_dedup = {}
-        epoch_time = int(time.time()) + 2592000
+        epoch_time = int(time.time()) + 2592000 * 36 # 3 years
         for entry in news_feed['entries']:
             id = entry['title_detail']['value'].lower()
             if id in id_dedup:
