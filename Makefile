@@ -20,5 +20,5 @@ deploy: all
 		--template-file $(FINAL_TEMPLATE) \
 		--stack-name $(CF_STACK) \
 		--capabilities CAPABILITY_IAM \
-		--parameter-overrides 'ChatBotURL=$(CHAT_URL)'
+		--parameter-overrides 'ChatBotURL=$(CHAT_URL)' 'FirehoseStream=$(FIREHOSE_STREAM)'
 

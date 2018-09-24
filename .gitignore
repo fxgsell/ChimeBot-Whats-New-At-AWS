@@ -6,6 +6,8 @@ function/idna/
 function/request/
 function/requests/
 function/urllib3/
+function/bs4/
+function/bin/
 
 chimebot-whatsnew-release.yml
 chimebot-whatsnew.zip

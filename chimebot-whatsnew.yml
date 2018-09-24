@@ -1,34 +1,43 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: A ChatBot for Amazon Chime that send a message in the group for each news from AWS.  
+Description: A ChatBot for Amazon Chime that send a message in the group for each news.  
 
 Parameters: 
   ChatBotURL: 
     Type: String
     AllowedPattern : ".+"
+  FirehoseStream: 
+    Type: String
 Resources:
   ScheduledFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: lambda_function.lambda_handler
       Runtime: python3.6
-      Timeout: 180
+      Timeout: 300
       CodeUri: ./function/chimebot-whatsnew.zip
       Policies:
         - DynamoDBCrudPolicy:
               TableName:
                 Ref: "MyTable"
+        - DynamoDBCrudPolicy:
+              TableName:
+                Ref: FeedsConfig
       Environment:
         Variables:
           TABLE_NAME: 
             Ref: MyTable
           BOT_URL:
             Ref: ChatBotURL
+          FEEDS_CONFIG:
+            Ref: FeedsConfig
+          KINESIS_STREAM:
+            Ref: FirehoseStream
       Events:
         Timer:
           Type: Schedule
           Properties:
-            Schedule: rate(5 minutes)
+            Schedule: rate(15 minutes)
   MyTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -39,8 +48,20 @@ Resources:
         - AttributeName: "id"
           KeyType: "HASH"
       ProvisionedThroughput:
-        ReadCapacityUnits: "1"
-        WriteCapacityUnits: "1"
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
       TimeToLiveSpecification:
         AttributeName: expire
         Enabled: TRUE
+  FeedsConfig:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "url"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "url"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: "1"
+        WriteCapacityUnits: "1"
